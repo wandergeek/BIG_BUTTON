@@ -1,0 +1,7 @@
+{
+    "board": "arduino:avr:nano",
+    "configuration": "cpu=atmega328old",
+    "sketch": "BIG_BUTTON.ino",
+    "port": "/dev/cu.usbserial-A92TLF3V",
+    "output": "../build"
+}

@@ -51,6 +51,7 @@ int ResetButtonState = 0;
 int LastResetButtonState = 0;
 
 int CHANNELSELECT = 0;
+int OLDCHANNELSELECT = 0;
 
 //BeatShiftingPot
 int PotValue1 = 0;
@@ -136,17 +137,17 @@ int ChannelSelectState5 = 0;
 int ChannelSelectState6 = 0;
 
 
-int OUT1 = 8;
-int OUT2 = 9;
-int OUT3 = 10;
-int OUT4 = 11;
-int OUT5 = 12;
-int OUT6 = 13;
-int BankLED = 20;
+byte OUT1 = 8;
+byte OUT2 = 9;
+byte OUT3 = 10;
+byte OUT4 = 11;
+byte OUT5 = 12;
+byte OUT6 = 13;
+byte BankLED = A4;
 
 
 
-int Sequence[14][43] = {
+byte Sequence[14][43] = {
 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,},
 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,},
 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,},
@@ -191,7 +192,6 @@ void setup()
   Serial.begin(9600);
   Serial.println("booting");
 
-  
 
 StepLength = analogRead(1);
 if(0<StepLength){
@@ -208,6 +208,7 @@ steps=32;}
 
 
 CHANNELSELECT= analogRead(2);
+OLDCHANNELSELECT = CHANNELSELECT;
 
 
 
@@ -292,6 +293,8 @@ ButtonBankSelectState[BankArrayNumber] = digitalRead(ButtonBankSelect);//These s
 
 
 if(RecordButtonState != LastRecordButtonState){
+  Serial.print("Channel is ");
+  Serial.println(Channel);
      if((RecordButtonState == HIGH) && (Channel == 1)) {
                                                          Sequence[Channel+BankRecord][BankPush1+1+NewKnobValue1] = 1;}
 else if((RecordButtonState == HIGH) && (Channel == 2)) {
@@ -302,8 +305,9 @@ else if((RecordButtonState == HIGH) && (Channel == 7)) {
                                                          Sequence[Channel+BankRecord][BankPush4+1+NewKnobValue4] = 1;}
 else if((RecordButtonState == HIGH) && (Channel == 8)) {
                                                          Sequence[Channel+BankRecord][BankPush5+1+NewKnobValue5] = 1;}
-else if((RecordButtonState == HIGH) && (Channel == 9)) {
-                                                         Sequence[Channel+BankRecord][BankPush6+1+NewKnobValue6] = 1;}                                                                                                                  
+else if((RecordButtonState == HIGH) && (Channel == 6)) {
+  Serial.println("Setting sequence?");
+                                                         Sequence[9+BankRecord][BankPush6+1+NewKnobValue6] = 1;}                                               //9?? wtf, channel reports as 6, whats up with these crazy channel numbers?                                                                   
 
 
      else { 
@@ -351,7 +355,7 @@ int diff = abs(KnobValue - OldKnobValue);
 if((diff > TOLERANCE) && (ChannelSelectState1 == HIGH))
 { NewKnobValue1 = KnobValue;
   OldKnobValue = KnobValue;
-    Serial.print("shift: ");
+  Serial.print("shift: ");
   Serial.println(KnobVal);
   }     
 if((diff > TOLERANCE) && (ChannelSelectState2 == HIGH))
@@ -386,15 +390,40 @@ if((diff > TOLERANCE) && (ChannelSelectState6  == HIGH))
   } //lots of the shit with that shift knob!!!! MEMORY STUFF
    
 
+  CHANNELSELECT= analogRead(0);
+  diff = abs(CHANNELSELECT - OLDCHANNELSELECT);
 
-{CHANNELSELECT= analogRead(0);
-if(0<CHANNELSELECT)   {(ChannelSelectState1 = HIGH); (ChannelSelectState2 = LOW); (ChannelSelectState3 = LOW); (ChannelSelectState4 = LOW); (ChannelSelectState5 = LOW);  (ChannelSelectState6 = LOW);}
-if(170<CHANNELSELECT) {(ChannelSelectState1 = LOW); (ChannelSelectState2 = HIGH); (ChannelSelectState3 = LOW); (ChannelSelectState4 = LOW); (ChannelSelectState5 = LOW);  (ChannelSelectState6 = LOW);}
-if(240<CHANNELSELECT) {(ChannelSelectState1 = LOW); (ChannelSelectState2 = LOW); (ChannelSelectState3 = HIGH); (ChannelSelectState4 = LOW); (ChannelSelectState5 = LOW);  (ChannelSelectState6 = LOW);}
-if(420<CHANNELSELECT) {(ChannelSelectState1 = LOW); (ChannelSelectState2 = LOW); (ChannelSelectState3 = LOW);  (ChannelSelectState4 = HIGH);(ChannelSelectState5 = LOW);  (ChannelSelectState6 = LOW);}
-if(700<CHANNELSELECT) {(ChannelSelectState1 = LOW); (ChannelSelectState2 = LOW); (ChannelSelectState3 = LOW);  (ChannelSelectState4 = LOW); (ChannelSelectState5 = HIGH); (ChannelSelectState6 = LOW);}
-if(1000<CHANNELSELECT){(ChannelSelectState1 = LOW); (ChannelSelectState2 = LOW); (ChannelSelectState3 = LOW);  (ChannelSelectState4 = LOW); (ChannelSelectState5 = LOW);  (ChannelSelectState6 = HIGH);}
+  if(diff > 10) {
+    reset_channel_select();
+
+    if(CHANNELSELECT >= 0 && CHANNELSELECT < 169) {
+      ChannelSelectState1 = HIGH;
+      Serial.println("Channel is now 1");
+
+    } else if(CHANNELSELECT >= 170 && CHANNELSELECT < 220) {
+      ChannelSelectState2 = HIGH;
+      Serial.println("Channel is now 2");
+
+    } else if(CHANNELSELECT >= 220 && CHANNELSELECT < 420) {
+      ChannelSelectState3 = HIGH;
+      Serial.println("Channel is now 3");
+
+    } else if(CHANNELSELECT >= 420 && CHANNELSELECT < 700) {
+      ChannelSelectState4 = HIGH;
+      Serial.println("Channel is now 4");
+
+    } else if(CHANNELSELECT >= 700 && CHANNELSELECT < 1000) {
+      ChannelSelectState5 = HIGH;
+      Serial.println("Channel is now 5");
+
+    } else if(CHANNELSELECT >= 1000) {
+      ChannelSelectState6 = HIGH;
+      Serial.println("Channel is now 6");
+    }
+    
+    OLDCHANNELSELECT = CHANNELSELECT;
 }
+
 
 
 
@@ -526,21 +555,23 @@ steps=32;}                                      //this bit chooses how long the 
  LastRecordButtonState = RecordButtonState;
  LastResetButtonState = ResetButtonState;//sectoion is for the state change detections
  Bankprevious[BankArrayNumber] = ButtonBankSelectState[BankArrayNumber]; 
-  }
+}
  
 
-  
-  //  =================== convenience routines ===================
+ //----------------------------------- 
+void reset_channel_select() {
+  ChannelSelectState1 = LOW;
+  ChannelSelectState2 = LOW;
+  ChannelSelectState3 = LOW;
+  ChannelSelectState4 = LOW;
+  ChannelSelectState5 = LOW;
+  ChannelSelectState6 = LOW;
+}
 
-//  isr() - quickly handle interrupts from the clock input
-//  ------------------------------------------------------
+//-----------------------------------
 void isr()
 {
-
   buttonState = HIGH;
-  Serial.println("boop");
-
- 
 }
 
 
